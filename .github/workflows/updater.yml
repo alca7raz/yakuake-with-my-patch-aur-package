@@ -1,0 +1,48 @@
+name: AUR Updater
+
+on:
+  schedule:
+    - cron: 0 8,12 * * *
+  push:
+    branches:
+      - main
+
+jobs:
+  Updater:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Get Ready
+      env:
+        AUR_PRIVKEY1: ${{ secrets.AUR_PRIVKEY_LINE1 }}
+        AUR_PRIVKEY2: ${{ secrets.AUR_PRIVKEY_LINE2 }}
+        AUR_PRIVKEY3: ${{ secrets.AUR_PRIVKEY_LINE3 }}
+        AUR_PRIVKEY4: ${{ secrets.AUR_PRIVKEY_LINE4 }}
+        AUR_PRIVKEY5: ${{ secrets.AUR_PRIVKEY_LINE5 }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "-----BEGIN OPENSSH PRIVATE KEY-----" > ~/.ssh/id_ed25519
+        echo ${AUR_PRIVKEY1} >> ~/.ssh/id_ed25519
+        echo ${AUR_PRIVKEY2} >> ~/.ssh/id_ed25519
+        echo ${AUR_PRIVKEY3} >> ~/.ssh/id_ed25519
+        echo ${AUR_PRIVKEY4} >> ~/.ssh/id_ed25519
+        echo ${AUR_PRIVKEY5} >> ~/.ssh/id_ed25519
+        echo "-----END OPENSSH PRIVATE KEY-----" >> ~/.ssh/id_ed25519
+        chmod 0600 ~/.ssh/id_ed25519
+        ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+
+    - name: Update Protocol
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REPO: github.com/${{ github.repository }}
+        AUR_NAME: ${{ secrets.AUR_NAME }}
+        AUR_EMAIL: ${{ secrets.AUR_EMAIL }}
+      run: |
+        ./updater.sh
+
+    - name: Print Result
+      if: always()
+      run: |
+        cat message
